@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dental Malpractice Case Explorer & Insurance Lifecycle</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --primary: #0f172a;
+      --accent: #0284c7;
+      --accent-light: #e0f2fe;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --warning: #d97706;
+      --warning-light: #fef3c7;
+      --success: #059669;
+      --success-light: #d1fae5;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 20px; line-height: 1.5; }
+    .container { max-width: 1100px; margin: 0 auto; background: var(--card); border-radius: 14px; box-shadow: 0 10px 25px rgba(15,23,42,0.06); border: 1px solid var(--border); overflow: hidden; }
+    
+    /* Header */
+    .header { background: var(--primary); color: #fff; padding: 20px 28px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+    .header p { font-size: 0.85rem; color: #94a3b8; }
+    .badge-payout { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 999px; font-weight: 600; font-size: 0.85rem; color: #38bdf8; }
+
+    /* Case Tabs */
+    .tabs { display: grid; grid-template-columns: repeat(5, 1fr); background: #f1f5f9; border-bottom: 1px solid var(--border); }
+    .tab-btn { padding: 14px 10px; border: none; background: transparent; cursor: pointer; font-size: 0.82rem; font-weight: 600; color: var(--muted); border-bottom: 3px solid transparent; transition: all 0.2s; text-align: center; }
+    .tab-btn:hover { color: var(--primary); background: #e2e8f0; }
+    .tab-btn.active { color: var(--accent); background: var(--card); border-bottom-color: var(--accent); }
+    .tab-btn span { display: block; font-size: 0.72rem; font-weight: 500; color: var(--muted); margin-top: 2px; }
+
+    /* Lifecycle Stepper */
+    .stepper-wrap { padding: 22px 28px 16px; border-bottom: 1px solid var(--border); background: #fcfcfd; }
+    .stepper { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+    .step-node { padding: 12px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--card); cursor: pointer; transition: all 0.2s; position: relative; }
+    .step-node:hover { border-color: #94a3b8; }
+    .step-node.active { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 4px 12px rgba(2,132,199,0.12); }
+    .step-num { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+    .step-node.active .step-num { color: var(--accent); }
+    .step-label { font-size: 0.84rem; font-weight: 700; color: var(--primary); }
+
+    /* Main Content Area */
+    .content { padding: 26px 28px; display: grid; grid-template-columns: 1.35fr 1fr; gap: 24px; min-height: 330px; }
+    .stage-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .stage-tag { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; background: var(--accent-light); color: var(--accent); }
+    .stage-title { font-size: 1.15rem; font-weight: 700; color: var(--primary); margin-bottom: 10px; }
+    .stage-desc { font-size: 0.94rem; color: #334155; margin-bottom: 16px; }
+    .bullet-list { list-style: none; space-y: 8px; }
+    .bullet-list li { position: relative; padding-left: 20px; font-size: 0.88rem; color: #334155; margin-bottom: 8px; }
+    .bullet-list li::before { content: "•"; position: absolute; left: 5px; color: var(--accent); font-weight: bold; }
+
+    /* Role & Insurance Breakdown */
+    .side-panel { display: flex; flex-direction: column; gap: 14px; }
+    .role-box { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; background: var(--card); }
+    .role-box h4 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 6px; }
+    .role-box p { font-size: 0.86rem; color: var(--primary); font-weight: 500; }
+    .role-box.takeaway { background: var(--warning-light); border-color: #fde68a; }
+    .role-box.takeaway h4 { color: var(--warning); }
+    .role-box.insurance { background: #f0fdf4; border-color: #bbf7d0; }
+    .role-box.insurance h4 { color: var(--success); }
+
+    /* Footer Controls */
+    .footer { padding: 16px 28px; background: #f8fafc; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .nav-btns { display: flex; gap: 10px; }
+    .btn { padding: 9px 18px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--primary); transition: all 0.15s; }
+    .btn:hover:not(:disabled) { background: #f1f5f9; }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn.primary:hover:not(:disabled) { background: #0369a1; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .progress-text { font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+
+    @media (max-width: 768px) {
+      .tabs, .stepper { grid-template-columns: 1fr; }
+      .content { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1 id="case-title">Case 1: Pediatric Sedation Cardiac Arrest</h1>
+        <p id="case-subtitle">Oregon (2025) • General Dentist & Outside Anesthesiologist</p>
+      </div>
+      <div class="badge-payout" id="case-payout">$22,000,000 Claim</div>
+    </div>
+
+    <div class="tabs" id="case-tabs"></div>
+
+    <div class="stepper-wrap">
+      <div class="stepper" id="stepper"></div>
+    </div>
+
+    <div class="content">
+      <div class="stage-card">
+        <span class="stage-tag" id="stage-tag">Stage 1 of 5</span>
+        <h2 class="stage-title" id="stage-heading">Clinical Error & Incident</h2>
+        <p class="stage-desc" id="stage-summary"></p>
+        <ul class="bullet-list" id="stage-bullets"></ul>
+      </div>
+
+      <div class="side-panel">
+        <div class="role-box">
+          <h4>Division of Labor & Liability</h4>
+          <p id="role-text"></p>
+        </div>
+        <div class="role-box insurance">
+          <h4>Insurance Carrier Dynamics</h4>
+          <p id="ins-text"></p>
+        </div>
+        <div class="role-box takeaway">
+          <h4>Student Risk-Management Takeaway</h4>
+          <p id="takeaway-text"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span class="progress-text" id="progress-label">Viewing Stage 1 of 5</span>
+      <div class="nav-btns">
+        <button class="btn" id="prev-btn" onclick="changeStep(-1)">← Previous Step</button>
+        <button class="btn primary" id="next-btn" onclick="changeStep(1)">Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const cases = [
+      {
+        shortTitle: "1. Pediatric Sedation",
+        subLabel: "$22M Claim",
+        title: "Case 1: Severe Brain Damage After Pediatric Dental Procedure",
+        subtitle: "Oregon (2025) • Operating Dentist & Mobile Anesthesiologist",
+        payout: "$22,000,000 Claimed",
+        role: "Dentist recommended General Anesthesia over N2O and performed dental work; Outside Anesthesiologist administered drugs and was responsible for monitoring vitals.",
+        insurance: "Dual-carrier defense. Because a $22M lifelong care plan vastly exceeds standard $1M–$3M individual policy limits, both providers' policies and clinic umbrella coverage are targeted.",
+        takeaway: "Verify emergency readiness for pediatric codes and document clear clinical justification before escalating from mild sedation (N2O) to General Anesthesia.",
+        steps: [
+          {
+            label: "1. Treatment & Incident",
+            heading: "Escalation to General Anesthesia & Hypoxic Arrest",
+            summary: "A healthy 4-year-old (M.L.) was scheduled for routine cavity fillings. The dentist recommended switching from nitrous oxide to general anesthesia with an outside anesthesiologist.",
+            bullets: [
+              "Shortly after general anesthesia induction, the child experienced severe oxygen deprivation.",
+              "Heart rate and oxygen saturation dropped critically while dental work was underway.",
+              "The child went into full cardiac arrest in the dental chair."
+            ]
+          },
+          {
+            label: "2. Emergency & Injury",
+            heading: "Chairside Resuscitation & Catastrophic Brain Injury",
+            summary: "A frantic in-office resuscitation effort began before paramedics took over and rushed the child to a children's hospital.",
+            bullets: [
+              "Team performed CPR and administered epinephrine injections to restart the heart.",
+              "Prolonged hypoxia caused severe brain swelling (hypoxic-ischemic encephalopathy).",
+              "Child regressed to an infant state—requiring diapers, a feeding tube, and 24/7 therapy to relearn head control, walking, and speech."
+            ]
+          },
+          {
+            label: "3. Core Allegations",
+            heading: "Multnomah County Circuit Court Negligence Filing",
+            summary: "The family filed a $22M medical negligence suit targeting both the dentist and the anesthesiologist across three core failures:",
+            bullets: [
+              "Negligent Anesthesia Management: Excessive/inappropriate dose for a 4-year-old's weight.",
+              "Failure to Monitor: Inadequate tracking of oxygen saturation and vital signs while sedated.",
+              "Failure to Respond: Delayed recognition of cardiac distress and inadequate clinic emergency preparedness."
+            ]
+          },
+          {
+            label: "4. Provider Defense",
+            heading: "Co-Defendant Division of Responsibility",
+            summary: "In multi-provider sedation claims, defense strategies often diverge between the operating dentist and the anesthesia provider:",
+            bullets: [
+              "Dentist's Position: Focused strictly on operative dentistry; relied on a credentialed specialist to dose and monitor sedation.",
+              "Plaintiff's Counter to Dentist: Dentist initiated the switch to GA and owed a duty to ensure the facility and staff could handle a pediatric code.",
+              "Anesthesiologist's Exposure: Directly accountable for the anesthesia log, dosing calculations, and continuous pulse oximetry/capnography."
+            ]
+          },
+          {
+            label: "5. Insurance Outcome",
+            heading: "Policy Limits vs. $22M Lifelong Care Exposure",
+            summary: "Catastrophic pediatric neurological claims create extreme pressure on malpractice insurance structures:",
+            bullets: [
+              "Standard individual policies ($1M/$3M) are insufficient to cover $22M in 24/7 lifelong medical care.",
+              "Separate malpractice carriers for the dentist and anesthesiologist must navigate shared vs.apportioned fault.",
+              "High likelihood of policy-limit tenders and structured settlement negotiations to avoid an even larger runaway jury verdict."
+            ]
+          }
+        ]
+      },
+      {
+        shortTitle: "2. Premolar Mix-Up",
+        subLabel: "$15K–$50K+ Settled",
+        title: "Case 2: The Premolar Mix-Up (Wrong-Site Extraction)",
+        subtitle: "Orthodontist Referral to General Dentist • Nomenclature Error",
+        payout: "$15,000 – $50,000+ Settlement",
+        role: "Vicarious Liability (Respondeat Superior): Both the Orthodontist and General Dentist were legally liable for delegating clinical verification to front-desk staff.",
+        insurance: "Wrong-tooth extraction is an indefensible 'never event.' Carriers bypassed trial and negotiated a joint out-of-court settlement covering future implant replacement.",
+        takeaway: "Never delegate clinical discrepancy checks to non-clinical staff. Always conduct a direct doctor-to-doctor call and verify tooth numbering systems (Universal vs. Palmer).",
+        steps: [
+          {
+            label: "1. Treatment & Incident",
+            heading: "Ambiguous Referral & Numbering System Clash",
+            summary: "Orthodontist (Dr. O) referred young patient 'L' to General Dentist (Dr. G) with a card reading 'please ext 5 for ortho,' but circled parts of both upper right premolars.",
+            bullets: [
+              "Dr. G's office manager called Dr. O's receptionist to clarify the ambiguous diagram.",
+              "Dr. O's receptionist read a chart note ('ext UR4' in Palmer Notation = 1st premolar) and said to pull '4 on the upper right.'",
+              "Using the Universal System, Dr. G consented the mother for Tooth #4 (2nd premolar) and extracted the wrong healthy tooth."
+            ]
+          },
+          {
+            label: "2. Emergency & Injury",
+            heading: "Irreversible Loss of a Healthy Permanent Tooth",
+            summary: "The error was discovered when the patient returned to the orthodontist to continue braces preparation.",
+            bullets: [
+              "Permanent upper right second premolar (#4) was unnecessarily and irreversibly lost.",
+              "Tooth #5 (the intended first premolar) still remained in the mouth, requiring a second surgical extraction.",
+              "Delayed orthodontic progression and created a lifelong need for a future dental implant and crown."
+            ]
+          },
+          {
+            label: "3. Core Allegations",
+            heading: "Never Event & Invalid Informed Consent",
+            summary: "The family pursued a malpractice claim against both offices based on three clear breaches of standard care:",
+            bullets: [
+              "Wrong-Site Surgery: Extracting the wrong tooth is classified as a medical 'never event.'",
+              "Invalid Informed Consent: Although the mother signed a consent form for #4, consent is legally void when based on a dentist's negligent clinical recommendation.",
+              "Failure to Verify: Absence of a proper clinical 'time-out' and peer-to-peer doctor verification."
+            ]
+          },
+          {
+            label: "4. Provider Defense",
+            heading: "Finger-Pointing Between Referring & Treating Offices",
+            summary: "When confronted by the family, neither practitioner accepted primary responsibility:",
+            bullets: [
+              "Dr. O (Orthodontist) was shocked and questioned why Dr. G pulled the second premolar instead of the first.",
+              "Dr. G apologized to the family but immediately blamed Dr. O's unclear referral card and the receptionist's phone instruction.",
+              "The mutual blame alienated the family and accelerated the formal insurance claim."
+            ]
+          },
+          {
+            label: "5. Insurance Outcome",
+            heading: "Rapid Out-of-Court Settlement by Malpractice Carriers",
+            summary: "Defense experts and insurance adjusters found zero pathway to defend the claim in front of a jury:",
+            bullets: [
+              "Both doctors were legally liable for their employees' phone relay under vicarious liability.",
+              "Carriers settled out of court ($15,000–$50,000+ range) to avoid trial costs and reputational damage.",
+              "Settlement covered surgical refunds, the subsequent correct extraction, pain/suffering, and a future implant/crown."
+            ]
+          }
+        ]
+      },
+      {
+        shortTitle: "3. Jaw Fracture",
+        subLabel: "$438,000 Settled",
+        title: "Case 3: Fractured Jaw During Wisdom Tooth Extraction",
+        subtitle: "Deeply Impacted Third Molar • Nerve Injury & Mandibular Fracture",
+        payout: "$438,000 Settlement",
+        role: "Dentist bore primary liability for not referring to an Oral Surgeon, using excessive force instead of sectioning, and missing the post-op fracture diagnosis.",
+        insurance: "Recognizing a highly sympathetic plaintiff with permanent facial asymmetry and weak generic consent forms, the carrier settled for $438K to cap multi-million-dollar trial risk.",
+        takeaway: "Know when to refer high-risk impactions near the IAN to an OMFS, section teeth rather than forcing elevation, and use anatomy-specific informed consent.",
+        steps: [
+          {
+            label: "1. Treatment & Incident",
+            heading: "Excessive Mechanical Force on High-Risk Impaction",
+            summary: "Patient presented for surgical extraction of deeply impacted lower third molars located in close proximity to the inferior alveolar nerve (IAN).",
+            bullets: [
+              "Pre-op radiographs clearly showed deep root impaction and high nerve risk.",
+              "Instead of sectioning the tooth, performing a coronectomy, or referring to an oral surgeon, the dentist applied excessive mechanical force.",
+              "The mandible fractured intra-operatively, and the patient was discharged home without the fracture being diagnosed."
+            ]
+          },
+          {
+            label: "2. Emergency & Injury",
+            heading: "Mandibular Malunion, TMJ Damage & Permanent Numbness",
+            summary: "The patient experienced severe swelling, pain, and numbness persisting far beyond normal recovery windows:",
+            bullets: [
+              "Fractured lower jaw (mandible) leading to malunion, permanent facial asymmetry, and cosmetic deformity.",
+              "Inferior alveolar nerve injury causing permanent numbness in the lower lip and chin.",
+              "Severe TMJ ligament/tendon trauma resulting in chronic pain and restricted jaw opening (trismus)."
+            ]
+          },
+          {
+            label: "3. Core Allegations",
+            heading: "Negligent Technique & Defective Informed Consent",
+            summary: "Plaintiff's legal counsel brought three primary claims against the extracting dentist:",
+            bullets: [
+              "Improper Surgical Technique: Using excessive elevator force rather than safe sectioning or specialty referral.",
+              "Failure to Disclose Specific Risks: Not explaining the heightened risk of jaw fracture and nerve injury visible on pre-op X-rays.",
+              "Lack of True Informed Consent: Relying on boilerplate consent forms that omitted patient-specific anatomical hazards."
+            ]
+          },
+          {
+            label: "4. Provider Defense",
+            heading: "Known Surgical Risk & Bone Density Arguments",
+            summary: "The practitioner attempted to defend the adverse outcome using standard surgical risk arguments:",
+            bullets: [
+              "Argued that mandible fractures and paresthesia are known, inherent risks of impacted third-molar surgery.",
+              "Suggested pre-existing bone density issues contributed to the jaw fracture.",
+              "Claimed the patient failed to adequately report the severity of post-op numbness during follow-up."
+            ]
+          },
+          {
+            label: "5. Insurance Outcome",
+            heading: "Strategic $438,000 Settlement to Cap Jury Exposure",
+            summary: "The malpractice carrier evaluated the post-op imaging and permanent disfigurement and opted to settle pre-trial:",
+            bullets: [
+              "Post-op X-rays undeniably showed the displaced fracture, and generic consent forms provided weak legal protection.",
+              "Similar jury trials for fractured jaws/permanent paresthesia have yielded verdicts from $500,000 to over $9,000,000.",
+              "Carrier authorized a $438,000 settlement to cover ORIF jaw surgery, lost wages, and permanent impairment."
+            ]
+          }
+        ]
+      },
+      {
+        shortTitle: "4. Oral Cancer",
+        subLabel: "$11M Jury Verdict",
+        title: "Case 4: Failure to Diagnose Oral Cancer & Record Spoliation",
+        subtitle: "Heffelfinger v. Shen (2018–2025) • 7-Month Delay & Missing Charts",
+        payout: "$11,000,000 Verdict ($8M Punitive)",
+        role: "Dentist held 100% responsible for ignoring an unhealing tongue lesion across 8 visits and intentionally withholding/destroying patient records.",
+        insurance: "Doctor refused to settle. Jury awarded $3M compensatory + $8M punitive. Because malpractice policies exclude punitive damages, the dentist was left personally liable for millions.",
+        takeaway: "Any oral lesion persisting >2 weeks requires biopsy or specialist referral. Never alter, hide, or withhold patient records—spoliation triggers uncovered punitive damages.",
+        steps: [
+          {
+            label: "1. Treatment & Incident",
+            heading: "Eight Visits Over Seven Months Without Biopsy or Referral",
+            summary: "In 2018, Mary Heffelfinger visited Dr. Linda Shen ~8 times over 7 months complaining of a persistent, painful sore on her tongue.",
+            bullets: [
+              "Standard of care mandates biopsy or referral for any oral lesion persisting beyond 14 days.",
+              "Instead of referring to an oral surgeon, the dentist repeatedly prescribed antibiotics and pain-killing mouthwash.",
+              "Even when a dental assistant expressed concern over the worsening sore, the dentist dismissed it."
+            ]
+          },
+          {
+            label: "2. Emergency & Injury",
+            heading: "Stage IV Squamous Cell Carcinoma & Partial Glossectomy",
+            summary: "Due to the 7-month diagnostic delay, the lesion progressed to late-stage malignancy:",
+            bullets: [
+              "Diagnosed with Stage IV squamous cell carcinoma (tongue cancer).",
+              "Patient underwent aggressive chemotherapy and a partial glossectomy (surgical removal of part of the tongue).",
+              "Left with permanent disfigurement, slurred speech, and severe difficulty eating and swallowing."
+            ]
+          },
+          {
+            label: "3. Core Allegations",
+            heading: "Diagnostic Negligence & Spoliation of Evidence",
+            summary: "Beyond the clinical failure to refer, the dentist's post-diagnosis conduct turned a malpractice claim into an intentional misconduct case:",
+            bullets: [
+              "Failure to Diagnose & Refer: Ignoring an unmistakable malignancy over 7 months.",
+              "Extortionate Record Withholding: Dentist refused to release charts unless the patient signed a liability waiver.",
+              "Spoliation of Evidence: When the patient refused the waiver, the records 'disappeared'—forcing attorneys to prove visits using pharmacy and gas receipts."
+            ]
+          },
+          {
+            label: "4. Provider Defense",
+            heading: "Erratic Trial Testimony & Courtroom Walkout",
+            summary: "Refusing to settle, the dentist took the case to a jury trial where her defense collapsed:",
+            bullets: [
+              "Testified she didn't tell the patient about the lesion because she thought the patient was 'psychiatrically unstable.'",
+              "Claimed she wrote an oral surgery referral—but when produced in court, the slip made zero mention of a lesion.",
+              "Blamed her former office manager (the patient's sister) for stealing the records, then walked out of the courtroom mid-trial and never returned."
+            ]
+          },
+          {
+            label: "5. Insurance Outcome",
+            heading: "$11M Verdict & Personal Financial Ruin (Uncovered Punitive Damages)",
+            summary: "After just 1 hour of deliberation, the jury awarded $11 million ($3M compensatory + $8M punitive):",
+            bullets: [
+              "Excess Verdict: $11M vastly exceeded standard dental malpractice policy limits ($1M–$3M).",
+              "Punitive Exclusion: Malpractice insurance policies do not cover punitive damages ($8M) meant to punish intentional misconduct/record hiding.",
+              "Personal Liability: The dentist was left personally liable for millions, exposing her practices and personal assets to liquidation."
+            ]
+          }
+        ]
+      },
+      {
+        shortTitle: "5. Tool Aspiration",
+        subLabel: "$675,000 Settled",
+        title: "Case 5: Aspiration of Dental Implant Screwdriver",
+        subtitle: "Routine Implant Procedure • Unprotected Airway Emergency",
+        payout: "$675,000 Settlement",
+        role: "Operating Dentist bore sole clinical responsibility for failing to place a throat pack/rubber dam or tether the micro-instrument before intra-oral use.",
+        insurance: "Treated as virtually indefensible (res ipsa loquitur). The carrier fast-tracked a $675,000 out-of-court settlement to avoid a guaranteed jury loss.",
+        takeaway: "Always place a 4x4 gauze throat screen or rubber dam and tether small implant drivers with floss—juries never forgive skipping a 10-cent barrier.",
+        steps: [
+          {
+            label: "1. Treatment & Incident",
+            heading: "Dropped Implant Screwdriver Over an Open Airway",
+            summary: "During a routine dental implant procedure for patient Janus Pawlowicz, the dentist handled a small metal hole-drilling/screwdriver tool.",
+            bullets: [
+              "The patient's airway was completely unprotected—no rubber dam, throat screen, or gauze pack was placed.",
+              "The small, saliva-slicked metal instrument slipped from the dentist's control.",
+              "It fell to the back of the unblocked throat and was aspirated into the respiratory tract."
+            ]
+          },
+          {
+            label: "2. Emergency & Injury",
+            heading: "Emergency Hospital Transport & Invasive Retrieval Surgery",
+            summary: "The aspirated metal tool created an immediate, life-threatening airway/thoracic emergency:",
+            bullets: [
+              "Patient was rushed by emergency transport to the hospital.",
+              "Forced to undergo invasive emergency surgery under general anesthesia to locate and retrieve the metal device.",
+              "Suffered physical surgical recovery pain and severe emotional distress."
+            ]
+          },
+          {
+            label: "3. Core Allegations",
+            heading: "Failure to Use Basic Protective Airway Barriers",
+            summary: "The lawsuit centered on a straightforward, preventable breach of the dental standard of care:",
+            bullets: [
+              "Failure to Use Protective Barriers: Omitting inexpensive, standard precautions (rubber dam, gauze throat pack, or floss tether).",
+              "Negligent Procedural Management: Failing to maintain instrument control over an open pharynx.",
+              "Foreseeable Harm: Creating an entirely preventable medical emergency."
+            ]
+          },
+          {
+            label: "4. Provider Defense",
+            heading: "Conceding Indefensibility & Avoiding Trial",
+            summary: "Unlike contested surgical complication cases, both the dentist and defense counsel recognized the posture of the case immediately:",
+            bullets: [
+              "Dental assistants cannot catch a dropped tool in an unblocked throat with suction alone; duty rests on the dentist.",
+              "Recognizing that failing to use a basic throat barrier is indefensible before a jury, the dentist consented to settle.",
+              "Focus shifted immediately from contesting liability to negotiating damages out of court."
+            ]
+          },
+          {
+            label: "5. Insurance Outcome",
+            heading: "Fast-Tracked $675,000 Settlement by Malpractice Carrier",
+            summary: "The practice's malpractice carrier stepped in to resolve and pay the $675,000 settlement:",
+            bullets: [
+              "Carriers push to settle aspiration claims rapidly because lay jurors easily understand that a piece of gauze prevents thoracic surgery.",
+              "The $675,000 payout covered emergency surgery bills, physical trauma, and emotional distress.",
+              "Triggered a mandatory National Practitioner Data Bank (NPDB) report and practice risk-management review."
+            ]
+          }
+        ]
+      }
+    ];
+
+    let currentCase = 0;
+    let currentStep = 0;
+
+    function init() {
+      const tabsEl = document.getElementById("case-tabs");
+      tabsEl.innerHTML = cases.map((c, idx) => `
+        <button class="tab-btn ${idx === 0 ? 'active' : ''}" onclick="selectCase(${idx})">
+          ${c.shortTitle}
+          <span>${c.subLabel}</span>
+        </button>
+      `).join("");
+      render();
+    }
+
+    function selectCase(idx) {
+      currentCase = idx;
+      currentStep = 0;
+      document.querySelectorAll(".tab-btn").forEach((btn, i) => {
+        btn.classList.toggle("active", i === idx);
+      });
+      render();
+    }
+
+    function selectStep(idx) {
+      currentStep = idx;
+      render();
+    }
+
+    function changeStep(delta) {
+      const next = currentStep + delta;
+      if (next >= 0 && next < 5) {
+        currentStep = next;
+        render();
+      }
+    }
+
+    function render() {
+      const c = cases[currentCase];
+      const s = c.steps[currentStep];
+
+      document.getElementById("case-title").textContent = c.title;
+      document.getElementById("case-subtitle").textContent = c.subtitle;
+      document.getElementById("case-payout").textContent = c.payout;
+
+      const stepperEl = document.getElementById("stepper");
+      stepperEl.innerHTML = c.steps.map((st, i) => `
+        <div class="step-node ${i === currentStep ? 'active' : ''}" onclick="selectStep(${i})">
+          <div class="step-num">Step ${i + 1}</div>
+          <div class="step-label">${st.label.replace(/^[0-9]+\.\s*/, '')}</div>
+        </div>
+      `).join("");
+
+      document.getElementById("stage-tag").textContent = `Stage ${currentStep + 1} of 5 • ${s.label}`;
+      document.getElementById("stage-heading").textContent = s.heading;
+      document.getElementById("stage-summary").textContent = s.summary;
+      document.getElementById("stage-bullets").innerHTML = s.bullets.map(b => `<li>${b}</li>`).join("");
+
+      document.getElementById("role-text").textContent = c.role;
+      document.getElementById("ins-text").textContent = c.insurance;
+      document.getElementById("takeaway-text").textContent = c.takeaway;
+
+      document.getElementById("progress-label").textContent = `Viewing Case ${currentCase + 1}, Stage ${currentStep + 1} of 5`;
+      document.getElementById("prev-btn").disabled = currentStep === 0;
+      document.getElementById("next-btn").disabled = currentStep === 4;
+    }
+
+    init();
+  </script>
+</body>
+</html>
